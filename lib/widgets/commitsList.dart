@@ -9,7 +9,7 @@ class CommitListState extends State<CommitsList> {
   final RefreshController _refreshController = RefreshController();
 
   List<Commits> _commits = List<Commits>();
-
+  bool isLoading = false;
   @override
   void initState() {
     super.initState();
@@ -20,9 +20,11 @@ class CommitListState extends State<CommitsList> {
     print("inside get commits");
     setState(() {
       _commits.clear();
+      isLoading = true;
     });
     API.getCommits().then((response) {
       setState(() {
+        isLoading = false;
         Iterable list = json.decode(response.body);
         _commits = list.map((model) => Commits.fromJson(model)).toList();
         _refreshController.refreshCompleted();
@@ -38,16 +40,17 @@ class CommitListState extends State<CommitsList> {
 
   Widget dataColumn(BuildContext context, int index) {
     return Expanded(
+        flex: 70,
         child: Column(
-      // align the text to the left instead of centered
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(_commits[index].commit.committer.name),
-        Text(_commits[index].commit.committer.email),
-        Text(_commits[index].commit.committer.date),
-        Text(_commits[index].commit.message),
-      ],
-    ));
+          // align the text to the left instead of centered
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(_commits[index].commit.committer.name),
+            Text(_commits[index].commit.committer.email),
+            Text(_commits[index].commit.committer.date),
+            Text(_commits[index].commit.message),
+          ],
+        ));
   }
 
   static Text makeText(String name) {
@@ -55,6 +58,7 @@ class CommitListState extends State<CommitsList> {
   }
 
   Widget headingColumn = Expanded(
+    flex: 30,
     child: Column(
       // align the text to the left instead of centered
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,22 +75,30 @@ class CommitListState extends State<CommitsList> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Git Commits History Flutter Demo')),
-      body: SmartRefresher(
-          controller: _refreshController,
-          enablePullDown: true,
-          onRefresh: _getCommits,
-          child: ListView.separated(
-            itemCount: _commits.length,
-            separatorBuilder: (BuildContext context, int index) => Divider(),
-            padding: const EdgeInsets.all(8.0),
-            itemBuilder: (BuildContext context, int index) {
-              return Row(
-                children: <Widget>[headingColumn, dataColumn(context, index)],
-              );
+      body: isLoading
+          ? Center(
+              child: CircularProgressIndicator(),
+            )
+          : SmartRefresher(
+              controller: _refreshController,
+              enablePullDown: true,
+              onRefresh: _getCommits,
+              child: ListView.separated(
+                itemCount: _commits.length,
+                separatorBuilder: (BuildContext context, int index) =>
+                    Divider(),
+                padding: const EdgeInsets.all(8.0),
+                itemBuilder: (BuildContext context, int index) {
+                  return Row(
+                    children: <Widget>[
+                      headingColumn,
+                      dataColumn(context, index)
+                    ],
+                  );
 
-              // return _buildItemsForListView(context, index);
-            },
-          )),
+                  // return _buildItemsForListView(context, index);
+                },
+              )),
       floatingActionButton: FloatingActionButton(
         onPressed: _getCommits,
         tooltip: 'Refresh',
