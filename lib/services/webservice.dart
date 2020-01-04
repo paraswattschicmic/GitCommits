@@ -15,7 +15,7 @@ class API {
     };
     return await http.get(
       url,
-      headers: requestHeaders,
+      // headers: requestHeaders,
     );
   }
 }

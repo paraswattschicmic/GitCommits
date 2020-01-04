@@ -26,6 +26,7 @@ class CommitListState extends State<CommitsList> {
       setState(() {
         isLoading = false;
         Iterable list = json.decode(response.body);
+        print("inside respo");
         _commits = list.map((model) => Commits.fromJson(model)).toList();
         _refreshController.refreshCompleted();
         print('_commits');
