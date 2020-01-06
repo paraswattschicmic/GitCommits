@@ -5,8 +5,8 @@ import 'package:GitCommits/utils/constants.dart';
 const apiUrl = Constants.COMMITS_URL;
 
 class API {
-  static Future getCommits() async {
-    var url = apiUrl;
+  static Future getCommits(url) async {
+    // var url = apiUrl;
     return await http.get(url);
   }
 }
