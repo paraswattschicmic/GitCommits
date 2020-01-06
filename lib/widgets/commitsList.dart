@@ -61,10 +61,12 @@ class CommitListState extends State<CommitsList> {
       nextPage = nextPage != ''
           ? nextPage.substring(nextPage.indexOf("<") + 1, nextPage.indexOf(">"))
           : '';
+      print(nextPage);
       //Find if next page exist
       String findNextPage = response.headers['link'] != null
           ? response.headers['link'].split(',')[0].split(';')[1].split('=')[1]
           : '';
+      print(findNextPage);
       findNextPage = findNextPage.replaceAll('"', '');
       setState(() {
         hasNextPage = findNextPage == "next" ? true : false;
@@ -158,10 +160,9 @@ class CommitListState extends State<CommitsList> {
               onRefresh: _getCommits,
               child: ListView.builder(
                 itemCount: hasNextPage ? _commits.length + 1 : _commits.length,
-                // separatorBuilder: (BuildContext context, int index) =>
-                //     Divider(),
                 padding: const EdgeInsets.all(8.0),
                 itemBuilder: (BuildContext context, int index) {
+                  print(_commits.length);
                   return (index == _commits.length && hasNextPage)
                       ? Container(
                           child: FlatButton(
