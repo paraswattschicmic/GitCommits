@@ -14,7 +14,6 @@ class CommitListState extends State<CommitsList> {
   void initState() {
     super.initState();
     _getCommits();
-    print(new DateTime.now());
   }
 
   _getCommits() {
@@ -24,9 +23,11 @@ class CommitListState extends State<CommitsList> {
       isLoading = true;
     });
     API.getCommits().then((response) {
+      print(response.headers);
       setState(() {
         isLoading = false;
         Iterable list = json.decode(response.body);
+        print("inside respo");
         _commits = list.map((model) => Commits.fromJson(model)).toList();
         _refreshController.refreshCompleted();
         print('_commits');
@@ -39,9 +40,13 @@ class CommitListState extends State<CommitsList> {
     super.dispose();
   }
 
+  static Text makeText(String name) {
+    return Text(name, style: TextStyle(fontWeight: FontWeight.bold));
+  }
+
   String getTimeAgo(String dateTime) {
     var currentDate = new DateTime.now();
-    var date = DateTime.parse(dateTime);
+    var date = DateTime.parse(dateTime).toLocal();
     if (date.year == currentDate.year) {
       if (date.month == currentDate.month) {
         if (date.day == currentDate.day) {
@@ -67,18 +72,28 @@ class CommitListState extends State<CommitsList> {
     }
   }
 
-  static Text makeText(String name) {
-    return Text(name, style: TextStyle(fontWeight: FontWeight.bold));
+  Expanded makeHeaderColumn(BuildContext context, int index, String text) {
+    return Expanded(
+        flex: 30,
+        child: Column(
+          // align the text to the left instead of centered
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            makeText(text),
+          ],
+        ));
   }
 
-  DataRow dataCell(Commits obj) {
-    print(obj);
-    return DataRow(cells: <DataCell>[
-      DataCell(Text(obj.commit.committer.name)),
-      DataCell(Text(obj.commit.committer.email)),
-      DataCell(Text(obj.commit.committer.date)),
-      DataCell(Text(obj.commit.message))
-    ]);
+  Expanded makeDataColumn(BuildContext context, int index, String text) {
+    return Expanded(
+        flex: 70,
+        child: Column(
+          // align the text to the left instead of centered
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(text),
+          ],
+        ));
   }
 
   @override
@@ -93,26 +108,80 @@ class CommitListState extends State<CommitsList> {
               controller: _refreshController,
               enablePullDown: true,
               onRefresh: _getCommits,
-              child: SingleChildScrollView(
-                  scrollDirection: Axis.vertical,
-                  child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                          columns: [
-                            DataColumn(label: makeText("Name")),
-                            DataColumn(label: makeText("Email")),
-                            DataColumn(label: makeText("Commit Time")),
-                            DataColumn(label: makeText("Message"))
-                          ],
-                          rows: _commits
-                              .map((obj) => DataRow(cells: <DataCell>[
-                                    DataCell(Text(obj.commit.committer.name)),
-                                    DataCell(Text(obj.commit.committer.email)),
-                                    DataCell(Text(
-                                        getTimeAgo(obj.commit.committer.date))),
-                                    DataCell(Text(obj.commit.message))
-                                  ]))
-                              .toList())))),
+              child: ListView.builder(
+                itemCount: _commits.length,
+                // separatorBuilder: (BuildContext context, int index) =>
+                //     Divider(),
+                padding: const EdgeInsets.all(8.0),
+                itemBuilder: (BuildContext context, int index) {
+                  return Card(
+                      child: Row(
+                    children: <Widget>[
+                      Expanded(
+                          flex: 100,
+                          child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+
+                                  // align the text to the left instead of centered
+                                  children: <Widget>[
+                                    Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: <Widget>[
+                                          makeHeaderColumn(
+                                              context, index, 'Name'),
+                                          makeDataColumn(
+                                              context,
+                                              index,
+                                              _commits[index]
+                                                  .commit
+                                                  .committer
+                                                  .name)
+                                        ]),
+                                    Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: <Widget>[
+                                          makeHeaderColumn(
+                                              context, index, 'Email'),
+                                          makeDataColumn(
+                                              context,
+                                              index,
+                                              _commits[index]
+                                                  .commit
+                                                  .committer
+                                                  .email)
+                                        ]),
+                                    Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: <Widget>[
+                                          makeHeaderColumn(
+                                              context, index, 'Commit Time'),
+                                          makeDataColumn(
+                                              context,
+                                              index,
+                                              getTimeAgo(_commits[index]
+                                                  .commit
+                                                  .committer
+                                                  .date))
+                                        ]),
+                                    Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: <Widget>[
+                                          makeHeaderColumn(
+                                              context, index, 'Message'),
+                                          makeDataColumn(context, index,
+                                              _commits[index].commit.message)
+                                        ])
+                                  ])))
+                    ],
+                  ));
+                  // return _buildItemsForListView(context, index);
+                },
+              )),
       floatingActionButton: FloatingActionButton(
         onPressed: _getCommits,
         tooltip: 'Refresh',
