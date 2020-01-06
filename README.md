@@ -6,13 +6,13 @@ A new Flutter project.
 
 This project is to demonstrate Flutter to fetch Git commits using GitHub API.
 
-Step to run the app
 Prerequisites
-
 1. Flutter installed and setup on the system
-2. Clone the project https://github.com/paraswattschicmic/GitCommits.git
-3. Navigate to the folder GitCommits
-4. Run the command(flutter run)
+
+Steps to run the app
+1. Clone the project https://github.com/paraswattschicmic/GitCommits.git
+2. Navigate to the folder GitCommits
+3. Run the command(flutter run)
 
 A few resources to get you started if this is your first Flutter project:
 
