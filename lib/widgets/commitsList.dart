@@ -115,24 +115,24 @@ class CommitListState extends State<CommitsList> {
 
   Widget makeHeaderColumn(BuildContext context, int index, String text) {
     return Expanded(
-        flex: 30,
+        flex: 35,
         child: Column(
           // align the text to the left instead of centered
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            makeText(text),
+            Padding(padding: const EdgeInsets.all(2.0), child: makeText(text))
           ],
         ));
   }
 
   Widget makeDataColumn(BuildContext context, int index, String text) {
     return Expanded(
-        flex: 70,
+        flex: 65,
         child: Column(
           // align the text to the left instead of centered
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(text),
+            Padding(padding: const EdgeInsets.all(2.0), child: Text(text)),
           ],
         ));
   }
@@ -202,10 +202,10 @@ class CommitListState extends State<CommitsList> {
                                               context,
                                               index,
                                               'Commit Time',
-                                              _commits[index]
+                                              getTimeAgo(_commits[index]
                                                   .commit
                                                   .committer
-                                                  .date),
+                                                  .date)),
                                           makeRow(context, index, 'Message',
                                               _commits[index].commit.message)
                                         ])))
