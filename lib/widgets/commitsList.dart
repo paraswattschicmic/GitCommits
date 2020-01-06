@@ -13,6 +13,7 @@ class CommitListState extends State<CommitsList> {
   bool isLoading = false;
   String apiUrl = Constants.COMMITS_URL;
   String nextPageUrl = '';
+  bool hasNextPage = false;
   @override
   void initState() {
     super.initState();
@@ -20,7 +21,6 @@ class CommitListState extends State<CommitsList> {
   }
 
   _getCommits() {
-    print("inside get commits");
     setState(() {
       _commits.clear();
       isLoading = true;
@@ -32,38 +32,46 @@ class CommitListState extends State<CommitsList> {
       nextPage = nextPage != ''
           ? nextPage.substring(nextPage.indexOf("<") + 1, nextPage.indexOf(">"))
           : '';
+      String findNextPage = response.headers['link'] != null
+          ? response.headers['link'].split(',')[0].split(';')[1].split('=')[1]
+          : '';
+      findNextPage = findNextPage.replaceAll('"', '');
       setState(() {
+        hasNextPage = findNextPage == "next" ? true : false;
         nextPageUrl = nextPage;
         isLoading = false;
         Iterable list = json.decode(response.body);
-        print("inside respo");
         _commits = list.map((model) => Commits.fromJson(model)).toList();
         _refreshController.refreshCompleted();
-        print('_commits');
-        print(_commits.length);
       });
     });
   }
 
   _loadMoreCommits() {
-    print("nextPageUrl _loadMoreCommits");
-    print(nextPageUrl);
-    API.getCommits(nextPageUrl).then((response) {
-      String nextPage = response.headers['link'].split(',')[0].split(';')[0];
-      nextPage =
-          nextPage.substring(nextPage.indexOf("<") + 1, nextPage.indexOf(">"));
-      print(nextPage);
-      setState(() {
-        nextPageUrl = nextPage;
-        isLoading = false;
-        Iterable list = json.decode(response.body);
-        _commits = _commits = new List<Commits>.from(_commits)
-          ..addAll(list.map((model) => Commits.fromJson(model)).toList());
-        _refreshController.refreshCompleted();
-        print('_commits 2');
-        print(_commits.length);
+    if (hasNextPage) {
+      API.getCommits(nextPageUrl).then((response) {
+        String nextPage = response.headers['link'] != null
+            ? response.headers['link'].split(',')[0].split(';')[0]
+            : '';
+        nextPage = nextPage != ''
+            ? nextPage.substring(
+                nextPage.indexOf("<") + 1, nextPage.indexOf(">"))
+            : '';
+        String findNextPage = response.headers['link'] != null
+            ? response.headers['link'].split(',')[0].split(';')[1].split('=')[1]
+            : '';
+        findNextPage = findNextPage.replaceAll('"', '');
+        setState(() {
+          hasNextPage = findNextPage == "next" ? true : false;
+          nextPageUrl = nextPage;
+          isLoading = false;
+          Iterable list = json.decode(response.body);
+          _commits = new List<Commits>.from(_commits)
+            ..addAll(list.map((model) => Commits.fromJson(model)).toList());
+          _refreshController.refreshCompleted();
+        });
       });
-    });
+    }
   }
 
   dispose() {
@@ -134,98 +142,97 @@ class CommitListState extends State<CommitsList> {
           ? Center(
               child: CircularProgressIndicator(),
             )
-          : NotificationListener<ScrollNotification>(
-              onNotification: (ScrollNotification scrollInfo) {
-                if (!isLoading &&
-                    scrollInfo.metrics.pixels ==
-                        scrollInfo.metrics.maxScrollExtent) {
-                  if (nextPageUrl != '') {
-                    _loadMoreCommits();
-                  }
-                }
-              },
-              child: SmartRefresher(
-                  controller: _refreshController,
-                  enablePullDown: true,
-                  onRefresh: _getCommits,
-                  child: ListView.builder(
-                    itemCount: _commits.length,
-                    // separatorBuilder: (BuildContext context, int index) =>
-                    //     Divider(),
-                    padding: const EdgeInsets.all(8.0),
-                    itemBuilder: (BuildContext context, int index) {
-                      return Card(
+          : SmartRefresher(
+              controller: _refreshController,
+              enablePullDown: true,
+              onRefresh: _getCommits,
+              child: ListView.builder(
+                itemCount: hasNextPage ? _commits.length + 1 : _commits.length,
+                // separatorBuilder: (BuildContext context, int index) =>
+                //     Divider(),
+                padding: const EdgeInsets.all(8.0),
+                itemBuilder: (BuildContext context, int index) {
+                  return (index == _commits.length && hasNextPage)
+                      ? Container(
+                          child: FlatButton(
+                            child: Text("Load More"),
+                            onPressed: () {
+                              _loadMoreCommits();
+                            },
+                          ),
+                        )
+                      : Card(
                           child: Row(
-                        children: <Widget>[
-                          Expanded(
-                              flex: 100,
-                              child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Column(
+                          children: <Widget>[
+                            Expanded(
+                                flex: 100,
+                                child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Column(
 
-                                      // align the text to the left instead of centered
-                                      children: <Widget>[
-                                        Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: <Widget>[
-                                              makeHeaderColumn(
-                                                  context, index, 'Name'),
-                                              makeDataColumn(
-                                                  context,
-                                                  index,
-                                                  _commits[index]
-                                                      .commit
-                                                      .committer
-                                                      .name)
-                                            ]),
-                                        Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: <Widget>[
-                                              makeHeaderColumn(
-                                                  context, index, 'Email'),
-                                              makeDataColumn(
-                                                  context,
-                                                  index,
-                                                  _commits[index]
-                                                      .commit
-                                                      .committer
-                                                      .email)
-                                            ]),
-                                        Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: <Widget>[
-                                              makeHeaderColumn(context, index,
-                                                  'Commit Time'),
-                                              makeDataColumn(
-                                                  context,
-                                                  index,
-                                                  getTimeAgo(_commits[index]
-                                                      .commit
-                                                      .committer
-                                                      .date))
-                                            ]),
-                                        Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: <Widget>[
-                                              makeHeaderColumn(
-                                                  context, index, 'Message'),
-                                              makeDataColumn(
-                                                  context,
-                                                  index,
-                                                  _commits[index]
-                                                      .commit
-                                                      .message)
-                                            ])
-                                      ])))
-                        ],
-                      ));
-                      // return _buildItemsForListView(context, index);
-                    },
-                  ))),
+                                        // align the text to the left instead of centered
+                                        children: <Widget>[
+                                          Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: <Widget>[
+                                                makeHeaderColumn(
+                                                    context, index, 'Name'),
+                                                makeDataColumn(
+                                                    context,
+                                                    index,
+                                                    _commits[index]
+                                                        .commit
+                                                        .committer
+                                                        .name)
+                                              ]),
+                                          Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: <Widget>[
+                                                makeHeaderColumn(
+                                                    context, index, 'Email'),
+                                                makeDataColumn(
+                                                    context,
+                                                    index,
+                                                    _commits[index]
+                                                        .commit
+                                                        .committer
+                                                        .email)
+                                              ]),
+                                          Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: <Widget>[
+                                                makeHeaderColumn(context, index,
+                                                    'Commit Time'),
+                                                makeDataColumn(
+                                                    context,
+                                                    index,
+                                                    getTimeAgo(_commits[index]
+                                                        .commit
+                                                        .committer
+                                                        .date))
+                                              ]),
+                                          Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: <Widget>[
+                                                makeHeaderColumn(
+                                                    context, index, 'Message'),
+                                                makeDataColumn(
+                                                    context,
+                                                    index,
+                                                    _commits[index]
+                                                        .commit
+                                                        .message)
+                                              ])
+                                        ])))
+                          ],
+                        ));
+                  // return _buildItemsForListView(context, index);
+                },
+              )),
       floatingActionButton: FloatingActionButton(
         onPressed: _getCommits,
         tooltip: 'Refresh',
